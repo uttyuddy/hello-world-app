@@ -81,8 +81,8 @@ export default function Home() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botResponse]);
-    } catch (error: any) {
-      console.error('Error:', error.message);
+    } catch (error: unknown) {
+      console.error('Error:', error instanceof Error ? error.message : '不明なエラー');
       // エラー時の処理
       const errorResponse: Message = {
         id: (Date.now() + 1).toString(),

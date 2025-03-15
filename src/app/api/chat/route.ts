@@ -28,7 +28,7 @@ export async function POST(request: Request) {
         : "誰か学びを大事に思ってる生徒はこないかな～";
 
     // 指定の形式でプロンプトを生成
-    const prompt = `あなたは先程「${aiMessage}」といいましたがその上で質問です。「${userMessage}」`;
+    const prompt = `o1-miniは先程「${aiMessage}」といいましたがその上で質問です。「${userMessage}」`;
 
     // プロンプトを1つの user ロールのメッセージとして設定
     const messages = [
@@ -59,10 +59,11 @@ export async function POST(request: Request) {
     const data = await response.json();
     const botMessage = data.choices[0]?.message?.content || '応答がありませんでした';
     return NextResponse.json({ message: botMessage });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('APIエラー:', error);
+    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
     return NextResponse.json(
-      { error: 'サーバーエラー', message: error.message },
+      { error: 'サーバーエラー', message: errorMessage },
       { status: 500 }
     );
   }
