@@ -1,3 +1,4 @@
+// page.tsx
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -10,7 +11,6 @@ interface Message {
 }
 
 export default function Home() {
-  // 初期メッセージの設定
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -24,12 +24,12 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 新しいメッセージが追加された際に自動スクロール
+  // 新しいメッセージが追加されたら自動スクロール
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // キーボード表示時に画面下部へスクロール
+  // キーボードが表示された時にUIを調整
   useEffect(() => {
     const handleResize = () => {
       if (document.activeElement === inputRef.current) {
@@ -42,38 +42,37 @@ export default function Home() {
   }, []);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
-
-    // ユーザーメッセージを作成
+    if (inputValue.trim() === '') return;
+  
+    // ユーザーメッセージを追加
     const newUserMessage: Message = {
       id: Date.now().toString(),
-      content: inputValue.trim(),
+      content: inputValue,
       sender: 'user',
       timestamp: new Date(),
     };
-
-    // 最新のメッセージ履歴を生成して状態更新
-    const newMessages = [...messages, newUserMessage];
-    setMessages(newMessages);
+  
+    setMessages((prev) => [...prev, newUserMessage]);
     setInputValue('');
     setIsLoading(true);
-
+  
     try {
-      // APIルートへPOSTリクエストを送信
+      // 自前のAPIルートを呼び出す
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           message: newUserMessage.content,
-          history: newMessages,
+          history: messages // 過去のメッセージ履歴を送信
         }),
       });
-
+  
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`APIリクエストに失敗しました: ${JSON.stringify(errorData)}`);
+        throw new Error('APIリクエストに失敗しました');
       }
-
+  
       const data = await response.json();
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
@@ -83,8 +82,12 @@ export default function Home() {
       };
       setMessages((prev) => [...prev, botResponse]);
     } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : '予期しないエラー';
-      console.error('Error:', errMsg);
+      // Error 型以外の場合は再 throw する
+      if (!(error instanceof Error)) {
+        throw error;
+      }
+      console.error('Error:', error.message);
+      // エラー時の処理
       const errorResponse: Message = {
         id: (Date.now() + 1).toString(),
         content: 'エラーが発生しました。再度お試しください。',
@@ -97,7 +100,7 @@ export default function Home() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -116,7 +119,9 @@ export default function Home() {
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${
+              message.sender === 'user' ? 'justify-end' : 'justify-start'
+            }`}
           >
             <div
               className={`max-w-xs sm:max-w-sm md:max-w-md p-3 rounded-lg ${
@@ -127,12 +132,14 @@ export default function Home() {
             >
               <p className="text-sm">{message.content}</p>
               <span className="text-xs opacity-70 block mt-1">
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {message.timestamp.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </span>
             </div>
           </div>
         ))}
-
         {isLoading && (
           <div className="flex justify-start">
             <div className="bg-gray-200 p-3 rounded-lg flex space-x-1">
@@ -142,7 +149,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
         <div ref={messagesEndRef} />
       </div>
 
@@ -160,7 +166,7 @@ export default function Home() {
           />
           <button
             onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isLoading}
+            disabled={inputValue.trim() === '' || isLoading}
             className="bg-blue-500 text-white p-2 rounded-full disabled:opacity-50"
           >
             <svg
