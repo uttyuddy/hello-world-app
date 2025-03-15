@@ -1,4 +1,3 @@
-// src/app/api/chat/route.ts
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
@@ -34,7 +33,7 @@ export async function POST(request: Request) {
     // プロンプトを1つの user ロールのメッセージとして設定
     const messages = [{ role: "user", content: prompt }];
 
-    // OpenAI APIにリクエスト送信（max_tokensパラメーターは削除）
+    // OpenAI APIにリクエスト送信
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -57,7 +56,12 @@ export async function POST(request: Request) {
 
     const data = await response.json();
     const botMessage = data.choices[0]?.message?.content || '応答がありませんでした';
-    return NextResponse.json({ message: botMessage });
+    
+    // 返信メッセージと現在のAI返信内容の両方を返す
+    return NextResponse.json({ 
+      message: botMessage,
+      ai_message: botMessage // 次の呼び出しで使用するために現在のAI返信を格納
+    });
   } catch (error: unknown) {
     // Error 型以外の例外の場合は再 throw する
     if (!(error instanceof Error)) {
