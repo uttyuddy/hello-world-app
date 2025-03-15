@@ -41,9 +41,9 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
-
+  
     // ユーザーメッセージを追加
     const newUserMessage: Message = {
       id: Date.now().toString(),
@@ -51,22 +51,49 @@ export default function Home() {
       sender: 'user',
       timestamp: new Date(),
     };
-
+  
     setMessages((prev) => [...prev, newUserMessage]);
     setInputValue('');
     setIsLoading(true);
-
-    // ボットの応答をシミュレート（実際の実装では、APIリクエストなどを行う）
-    setTimeout(() => {
+  
+    try {
+      // 自前のAPIルートを呼び出す
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: newUserMessage.content,
+          history: messages // 過去のメッセージ履歴を送信
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('APIリクエストに失敗しました');
+      }
+  
+      const data = await response.json();
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: '了解しました。他に何かご質問はありますか？',
+        content: data.message,
         sender: 'bot',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botResponse]);
+    } catch (error: any) {
+      console.error('Error:', error.message);
+      // エラー時の処理
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'エラーが発生しました。再度お試しください。',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
