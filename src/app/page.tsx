@@ -6,23 +6,40 @@ interface Message {
   id: string;
   content: string;
   sender: 'user' | 'bot';
-  timestamp: Date;
+  timestamp: string; // Date型からstring型に変更
 }
 
 export default function Home() {
+  // クライアントサイドのレンダリングを制御するstate
+  const [isClient, setIsClient] = useState(false);
+  
   // 初期メッセージの設定
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       content: 'こんにちは！何かお手伝いできることはありますか？',
       sender: 'bot',
-      timestamp: new Date(),
+      timestamp: '', // 空文字列で初期化
     },
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // クライアントサイドでのみ実行されるeffect
+  useEffect(() => {
+    // クライアントサイドでレンダリングされたことをマーク
+    setIsClient(true);
+    
+    // 初期メッセージのタイムスタンプを設定
+    setMessages(prevMessages => 
+      prevMessages.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp || formatTime(new Date())
+      }))
+    );
+  }, []);
 
   // 新しいメッセージが追加された際に自動スクロール
   useEffect(() => {
@@ -41,6 +58,11 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // 時間をフォーマットするヘルパー関数
+  const formatTime = (date: Date): string => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -49,7 +71,7 @@ export default function Home() {
       id: Date.now().toString(),
       content: inputValue.trim(),
       sender: 'user',
-      timestamp: new Date(),
+      timestamp: formatTime(new Date()),
     };
 
     // 最新のメッセージ履歴を生成して状態更新
@@ -79,7 +101,7 @@ export default function Home() {
         id: (Date.now() + 1).toString(),
         content: data.message,
         sender: 'bot',
-        timestamp: new Date(),
+        timestamp: formatTime(new Date()),
       };
       setMessages((prev) => [...prev, botResponse]);
     } catch (error: unknown) {
@@ -89,7 +111,7 @@ export default function Home() {
         id: (Date.now() + 1).toString(),
         content: 'エラーが発生しました。再度お試しください。',
         sender: 'bot',
-        timestamp: new Date(),
+        timestamp: formatTime(new Date()),
       };
       setMessages((prev) => [...prev, errorResponse]);
     } finally {
@@ -102,6 +124,17 @@ export default function Home() {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  // クライアントサイドでのレンダリングかどうかでメッセージの表示方法を調整
+  const renderTimestamp = (message: Message) => {
+    if (!isClient) return null;
+    
+    return (
+      <span className="text-xs opacity-70 block mt-1">
+        {message.timestamp}
+      </span>
+    );
   };
 
   return (
@@ -126,9 +159,7 @@ export default function Home() {
               }`}
             >
               <p className="text-sm">{message.content}</p>
-              <span className="text-xs opacity-70 block mt-1">
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              {renderTimestamp(message)}
             </div>
           </div>
         ))}
