@@ -1,6 +1,7 @@
 // layout.tsx
 import './globals.css';
 import type { Metadata } from 'next';
+import 'katex/dist/katex.min.css'; // KaTeXのCSSをインポート
 
 export const metadata: Metadata = {
   title: 'モバイルチャットアプリ',

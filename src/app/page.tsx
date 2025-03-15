@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import MathText from '@/components/MathText';
 
 interface Message {
   id: string;
@@ -17,7 +18,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'こんにちは！何かお手伝いできることはありますか？',
+      content: 'こんにちは！二次方程式 $ax^2 + bx + c = 0$ の解の公式は $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$ です。数式を含むメッセージが送れます。',
       sender: 'bot',
       timestamp: '', // 空文字列で初期化
     },
@@ -158,7 +159,9 @@ export default function Home() {
                   : 'bg-white text-gray-800 rounded-bl-none shadow'
               }`}
             >
-              <p className="text-sm">{message.content}</p>
+              <p className="text-sm">
+                <MathText text={message.content} />
+              </p>
               {renderTimestamp(message)}
             </div>
           </div>
