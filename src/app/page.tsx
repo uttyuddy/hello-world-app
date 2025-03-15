@@ -82,7 +82,11 @@ export default function Home() {
       };
       setMessages((prev) => [...prev, botResponse]);
     } catch (error: unknown) {
-      console.error('Error:', error instanceof Error ? error.message : '不明なエラー');
+      // Error 型以外の場合は再 throw する
+      if (!(error instanceof Error)) {
+        throw error;
+      }
+      console.error('Error:', error.message);
       // エラー時の処理
       const errorResponse: Message = {
         id: (Date.now() + 1).toString(),

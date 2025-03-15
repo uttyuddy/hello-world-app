@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 直前のo1-mini出力(ai_message)を取得し、空の場合は初期値を設定
+    // 直前の o1-mini 出力 (ai_message) を取得し、空の場合は初期値を設定
     const aiMessage =
       typeof body.ai_message === 'string' && body.ai_message.trim() !== ""
         ? body.ai_message.trim()
@@ -31,9 +31,7 @@ export async function POST(request: Request) {
     const prompt = `o1-miniは先程「${aiMessage}」といいましたがその上で質問です。「${userMessage}」`;
 
     // プロンプトを1つの user ロールのメッセージとして設定
-    const messages = [
-      { role: "user", content: prompt }
-    ];
+    const messages = [{ role: "user", content: prompt }];
 
     // OpenAI APIにリクエスト送信（max_tokensパラメーターは削除）
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -60,10 +58,13 @@ export async function POST(request: Request) {
     const botMessage = data.choices[0]?.message?.content || '応答がありませんでした';
     return NextResponse.json({ message: botMessage });
   } catch (error: unknown) {
-    console.error('APIエラー:', error);
-    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
+    // Error 型以外の例外の場合は再 throw する
+    if (!(error instanceof Error)) {
+      throw error;
+    }
+    console.error('APIエラー:', error.message);
     return NextResponse.json(
-      { error: 'サーバーエラー', message: errorMessage },
+      { error: 'サーバーエラー', message: error.message },
       { status: 500 }
     );
   }
