@@ -11,7 +11,8 @@ function splitTextAndMath(text: string) {
   const result: { type: 'text' | 'inline-math' | 'block-math'; content: string }[] = [];
   
   // インラインと块の数式のパターン
-  const mathPattern = /(\$\$[\s\S]+?\$\$)|(\$[^$\n]+?\$)/g;
+  // $...$ および $$...$$ に加えて \(...\) と \[...\] のパターンも検出
+  const mathPattern = /(\$\$[\s\S]+?\$\$)|(\$[^$\n]+?\$)|(\\\([\s\S]+?\\\))|(\\\[[\s\S]+?\\\])/g;
   
   // マッチした位置を記録
   let lastEnd = 0;
@@ -37,6 +38,16 @@ function splitTextAndMath(text: string) {
         type: 'inline-math',
         content: match[2].substring(1, match[2].length - 1), // $を除去
       });
+    } else if (match[3]) { // Inline Math \(...\)
+      result.push({
+        type: 'inline-math',
+        content: match[3].substring(2, match[3].length - 2), // \( と \) を除去
+      });
+    } else if (match[4]) { // Block Math \[...\]
+      result.push({
+        type: 'block-math',
+        content: match[4].substring(2, match[4].length - 2), // \[ と \] を除去
+      });
     }
     
     // 次の開始位置を更新
@@ -54,6 +65,21 @@ function splitTextAndMath(text: string) {
   return result;
 }
 
+// Markdown形式の太字を処理する関数
+function processBoldText(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      // 太字の場合
+      return <strong key={index}>{part.substring(2, part.length - 2)}</strong>;
+    } else {
+      // 通常のテキスト
+      return <span key={index}>{part}</span>;
+    }
+  });
+}
+
 const MathText: React.FC<MathTextProps> = ({ text }) => {
   // テキストを解析
   const parts = splitTextAndMath(text);
@@ -62,7 +88,7 @@ const MathText: React.FC<MathTextProps> = ({ text }) => {
     <>
       {parts.map((part, index) => {
         if (part.type === 'text') {
-          return <span key={index}>{part.content}</span>;
+          return <span key={index}>{processBoldText(part.content)}</span>;
         } 
         else if (part.type === 'inline-math') {
           return <InlineMathComponent key={index} formula={part.content} />;

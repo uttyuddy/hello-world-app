@@ -28,7 +28,8 @@ export async function POST(request: Request) {
         : "誰か学びを大事に思ってる生徒はこないかな～";
 
     // 指定の形式でプロンプトを生成
-    const prompt = `o1-miniは先程「${aiMessage}」といいましたがその上で質問です。「${userMessage}」`;
+    const prompt = `o1-miniは先程「${aiMessage}」といいましたがその上で質問です。「${userMessage}」
+回答に数式が必要な場合は、$...$（インライン数式）や$$...$$（ブロック数式）の形式で書いてください。KaTeXに対応する形で出力してください。`;
 
     // プロンプトを1つの user ロールのメッセージとして設定
     const messages = [{ role: "user", content: prompt }];
