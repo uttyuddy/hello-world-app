@@ -7,7 +7,7 @@ interface Message {
   id: string;
   content: string;
   sender: 'user' | 'bot';
-  timestamp: string; // Date型からstring型に変更
+  timestamp: string;
 }
 
 export default function Home() {
@@ -20,7 +20,7 @@ export default function Home() {
       id: '1',
       content: 'こんにちは！二次方程式 $ax^2 + bx + c = 0$ の解の公式は $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$ です。数式を含むメッセージが送れます。',
       sender: 'bot',
-      timestamp: '', // 空文字列で初期化
+      timestamp: '',
     },
   ]);
   const [inputValue, setInputValue] = useState('');
@@ -93,7 +93,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: newUserMessage.content,
-          ai_message: latestBotMessage, // 最新のボットメッセージを送信
+          ai_message: latestBotMessage,
           history: newMessages,
         }),
       });
@@ -144,76 +144,82 @@ export default function Home() {
     );
   };
 
-// メッセージエリアの部分修正（コンポーネント内部のみ抜粋）
-return (
-  <div className="flex flex-col h-screen">
-    {/* ヘッダー - 固定位置に */}
-    <header className="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
-      <h1 className="text-xl font-bold">チャットアプリ</h1>
-    </header>
+  return (
+    <div className="flex flex-col h-screen bg-gray-100">
+      {/* ヘッダー - LINE風のヘッダー */}
+      <header className="bg-green-500 text-white p-3 shadow-md sticky top-0 z-10 flex items-center">
+        <h1 className="text-lg font-medium">チャットアプリ</h1>
+      </header>
 
-    {/* メッセージエリア - flex-growでスペースを確保し、オーバーフロー時はスクロール */}
-    <div className="flex-grow overflow-y-auto p-4 space-y-4">
-      {messages.map((message) => (
-        <div
-          key={message.id}
-          className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-        >
+      {/* メッセージエリア - LINE風の背景 */}
+      <div className="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-100">
+        {messages.map((message) => (
           <div
-            className={`max-w-xs sm:max-w-sm md:max-w-md p-3 rounded-lg ${
-              message.sender === 'user'
-                ? 'bg-blue-500 text-white rounded-br-none'
-                : 'bg-white text-gray-800 rounded-bl-none shadow'
-            }`}
+            key={message.id}
+            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <p className="text-sm">
-              <MathText text={message.content} />
-            </p>
-            {renderTimestamp(message)}
+            {/* LINEスタイルのメッセージバブル */}
+            <div
+              className={`max-w-[70%] relative p-3 rounded-2xl ${
+                message.sender === 'user'
+                  ? 'bg-green-500 text-white rounded-tr-none'
+                  : 'bg-white text-gray-800 rounded-tl-none shadow'
+              }`}
+            >
+              <p className="text-sm">
+                <MathText text={message.content} />
+              </p>
+              {renderTimestamp(message)}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
-      {isLoading && (
-        <div className="flex justify-start">
-          <div className="bg-gray-200 p-3 rounded-lg flex space-x-1">
-            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></div>
-            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></div>
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-200 p-3 rounded-2xl flex space-x-1">
+              <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></div>
+              <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></div>
+            </div>
           </div>
-        </div>
-      )}
-      <div ref={messagesEndRef} />
-    </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
 
-    {/* 入力エリア - 画面下部に固定 */}
-    <div className="border-t border-gray-300 bg-white p-2 sticky bottom-0 z-10">
-      <div className="flex items-center space-x-2">
-        <input
-          ref={inputRef}
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="メッセージを入力..."
-          className="flex-1 p-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          onClick={handleSendMessage}
-          disabled={!inputValue.trim() || isLoading}
-          className="bg-blue-500 text-white p-2 rounded-full disabled:opacity-50"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 transform rotate-90"
-            viewBox="0 0 20 20"
-            fill="currentColor"
+      {/* 入力エリア - LINE風のスタイル */}
+      <div className="border-t border-gray-300 bg-white p-2 sticky bottom-0 z-10">
+        <div className="flex items-center space-x-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="メッセージを入力..."
+            className="flex-1 p-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={!inputValue.trim() || isLoading}
+            className="bg-green-500 text-white p-2 rounded-full disabled:opacity-50"
           >
-            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-          </svg>
-        </button>
+            {/* 上向き矢印のSVGアイコン */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 3a1 1 0 00-1 1v10.586l-3.293-3.293a1 1 0 10-1.414 1.414l5 5a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 14.586V4a1 1 0 00-1-1z"
+                clipRule="evenodd"
+                transform="rotate(180,10,10)"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
