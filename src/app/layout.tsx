@@ -1,7 +1,7 @@
 // layout.tsx
 import './globals.css';
 import type { Metadata } from 'next';
-import 'katex/dist/katex.min.css'; // KaTeXのCSSをインポート
+import 'katex/dist/katex.min.css';
 
 export const metadata: Metadata = {
   title: 'モバイルチャットアプリ',
@@ -16,7 +16,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body className="overscroll-none touch-manipulation">{children}</body>
+      <body className="overscroll-none touch-manipulation bg-gray-50">
+        {/* 画面全体を中央寄せ */}
+        <div className="min-h-screen flex items-center justify-center">
+          {children}
+        </div>
+      </body>
     </html>
   );
 }

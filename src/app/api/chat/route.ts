@@ -41,7 +41,7 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'o1-mini', // 使用するモデル
+        model: 'o1-preview', // 使用するモデル
         messages
       }),
     });
