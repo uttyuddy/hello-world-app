@@ -1,6 +1,6 @@
 // src/components/FallbackMathDisplay.tsx
-import React, { useRef, useEffect, useState } from 'react';
-import Image from 'next/image';
+import React, { useEffect, useState } from 'react';
+
 
 interface FallbackMathDisplayProps {
   formula: string;

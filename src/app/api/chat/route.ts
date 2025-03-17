@@ -1,6 +1,7 @@
 // src/app/api/chat/route.ts
 import { NextResponse } from 'next/server';
-import { sanitizeMathFormula, processApiMathResponse, getPrecomputedMathResponse } from '@/utils/mathSanitizer';
+import { processApiMathResponse, getPrecomputedMathResponse } from '@/utils/mathSanitizer';
+
 
 export async function POST(request: Request) {
   try {
