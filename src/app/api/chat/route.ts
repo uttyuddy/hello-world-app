@@ -1,4 +1,6 @@
+// src/app/api/chat/route.ts
 import { NextResponse } from 'next/server';
+import { sanitizeMathFormula, processApiMathResponse, getPrecomputedMathResponse } from '@/utils/mathSanitizer';
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +14,7 @@ export async function POST(request: Request) {
         ? body.message.trim()
         : "";
 
-    // 質問が空の場合の処理（必要に応じてエラーを返すなど）
+    // 質問が空の場合の処理
     if (!userMessage) {
       return NextResponse.json(
         { error: '質問が空です。質問を入力してください。' },
@@ -26,9 +28,20 @@ export async function POST(request: Request) {
         ? body.ai_message.trim()
         : "誰か学びを大事に思ってる生徒はこないかな～";
 
+    // 事前計算されたレスポンスをチェック（特定の数式リクエストの場合）
+    const precomputedResponse = getPrecomputedMathResponse(userMessage);
+    if (precomputedResponse) {
+      return NextResponse.json({ 
+        message: precomputedResponse,
+        ai_message: precomputedResponse
+      });
+    }
+
     // 指定の形式でプロンプトを生成
+    // 数式が含まれる場合のプロンプトを最適化
     const prompt = `o1-miniは先程「${aiMessage}」といいましたがその上で質問です。「${userMessage}」
-回答に数式が必要な場合は、$...$（インライン数式）や$$...$$（ブロック数式）の形式で書いてください。KaTeXに対応する形で出力してください。`;
+回答に数式が必要な場合は、$...$（インライン数式）や$$...$$（ブロック数式）の形式で書いてください。KaTeXに対応する形で出力してください。
+複雑な数式（特に無限和や無限積、多重積分など）は、シンプルな形式で表現してください。`;
 
     // プロンプトを1つの user ロールのメッセージとして設定
     const messages = [{ role: "user", content: prompt }];
@@ -55,7 +68,10 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    const botMessage = data.choices[0]?.message?.content || '応答がありませんでした';
+    let botMessage = data.choices[0]?.message?.content || '応答がありませんでした';
+    
+    // 応答テキスト内の数式を処理して安全な形式に変換
+    botMessage = processApiMathResponse(botMessage);
     
     // 返信メッセージと現在のAI返信内容の両方を返す
     return NextResponse.json({ 

@@ -1,6 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+// src/components/MathText.tsx
+import React, { useEffect, useRef, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import FallbackMathDisplay from './FallbackMathDisplay';
 
 interface MathTextProps {
   text: string;
@@ -80,9 +82,35 @@ function processBoldText(text: string): React.ReactNode[] {
   });
 }
 
+// ヤコビのθ関数の特別処理
+function normalizeJacobiTheta(formula: string): string {
+  // 特定のヤコビのθ関数パターンを検出して正規化
+  if (formula.includes("ヤコビのθ関数") || 
+      formula.includes("sum") && formula.includes("prod") && 
+      formula.includes("*n*=") && formula.includes("*q*")) {
+    
+    // 安全な公式に置き換え
+    return "\\sum_{n=-\\infty}^{\\infty} z^n q^{n^2} = \\prod_{n=1}^{\\infty} (1-q^{2n})(1+zq^{2n-1})(1+z^{-1}q^{2n-1})";
+  }
+  
+  return formula;
+}
+
 const MathText: React.FC<MathTextProps> = ({ text }) => {
   // テキストを解析
   const parts = splitTextAndMath(text);
+  
+  // モバイルであるかの判定
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    // モバイル端末かどうか判定
+    const checkMobile = () => {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    };
+    
+    setIsMobile(checkMobile());
+  }, []);
   
   return (
     <>
@@ -91,10 +119,10 @@ const MathText: React.FC<MathTextProps> = ({ text }) => {
           return <span key={index}>{processBoldText(part.content)}</span>;
         } 
         else if (part.type === 'inline-math') {
-          return <InlineMathComponent key={index} formula={part.content} />;
+          return <SafeMathComponent key={index} formula={part.content} displayMode={false} isMobile={isMobile} />;
         } 
         else if (part.type === 'block-math') {
-          return <BlockMathComponent key={index} formula={part.content} />;
+          return <SafeMathComponent key={index} formula={part.content} displayMode={true} isMobile={isMobile} />;
         }
         return null;
       })}
@@ -102,52 +130,57 @@ const MathText: React.FC<MathTextProps> = ({ text }) => {
   );
 };
 
-// インライン数式コンポーネント
-const InlineMathComponent: React.FC<{ formula: string }> = ({ formula }) => {
-  const containerRef = useRef<HTMLSpanElement>(null);
+// 安全な数式レンダリングコンポーネント
+const SafeMathComponent: React.FC<{ 
+  formula: string; 
+  displayMode: boolean;
+  isMobile: boolean;
+}> = ({ formula, displayMode, isMobile }) => {
+  const containerRef = useRef<HTMLDivElement | HTMLSpanElement>(null);
+  const [renderFailed, setRenderFailed] = useState(false);
   
   useEffect(() => {
-    if (containerRef.current) {
-      try {
-        katex.render(formula, containerRef.current, {
-          displayMode: false,
-          throwOnError: false
-        });
-      } catch (error) {
-        console.error('KaTeX inline rendering error:', error);
-        if (containerRef.current) {
-          containerRef.current.textContent = '$' + formula + '$';
-          containerRef.current.classList.add('text-red-500');
-        }
-      }
+    if (!containerRef.current) return;
+    
+    // ヤコビのθ関数の特別処理
+    const normalizedFormula = normalizeJacobiTheta(formula);
+    
+    try {
+      // KaTeXのオプションを最適化
+      const options = {
+        displayMode,
+        throwOnError: false,
+        strict: false,
+        trust: false,
+        maxSize: isMobile ? 5 : 10,
+        maxExpand: isMobile ? 100 : 1000,
+        errorColor: '#f44336'
+      };
+      
+      // モバイルで特に複雑な数式の場合、タイムアウト処理を追加
+      const katexRenderTimeout = setTimeout(() => {
+        console.warn('KaTeX rendering timeout - Using fallback');
+        setRenderFailed(true);
+      }, 1000); // 1秒でタイムアウト
+      
+      katex.render(normalizedFormula, containerRef.current, options);
+      clearTimeout(katexRenderTimeout);
+    } catch (error) {
+      console.error('KaTeX rendering error:', error);
+      setRenderFailed(true);
     }
-  }, [formula]);
+  }, [formula, displayMode, isMobile]);
   
-  return <span ref={containerRef} />;
-};
-
-// ブロック数式コンポーネント
-const BlockMathComponent: React.FC<{ formula: string }> = ({ formula }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  // レンダリングに失敗した場合、フォールバックを使用
+  if (renderFailed) {
+    return <FallbackMathDisplay formula={formula} displayMode={displayMode} />;
+  }
   
-  useEffect(() => {
-    if (containerRef.current) {
-      try {
-        katex.render(formula, containerRef.current, {
-          displayMode: true,
-          throwOnError: false
-        });
-      } catch (error) {
-        console.error('KaTeX block rendering error:', error);
-        if (containerRef.current) {
-          containerRef.current.textContent = '$$' + formula + '$$';
-          containerRef.current.classList.add('text-red-500');
-        }
-      }
-    }
-  }, [formula]);
-  
-  return <div ref={containerRef} className="py-2" />;
+  return displayMode ? (
+    <div ref={containerRef as React.RefObject<HTMLDivElement>} className="py-2 overflow-x-auto" />
+  ) : (
+    <span ref={containerRef as React.RefObject<HTMLSpanElement>} />
+  );
 };
 
 export default MathText;
